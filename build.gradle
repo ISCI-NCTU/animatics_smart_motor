@@ -11,8 +11,8 @@ apply plugin: 'maven'
 // uncomment to create an eclipse project using 'gradle eclipse'
 apply plugin: 'eclipse'
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 task deployApp(dependsOn: 'installApp') << {
   File binDir = new File(project.projectDir, '/bin')
@@ -43,4 +43,6 @@ dependencies {
   compile 'ros.rosjava_core:rosjava:0.0.0-SNAPSHOT'
   compile 'ros.rosjava_core:rosjava_messages:0.0.0-SNAPSHOT'
   compile 'ros.rosjava_core:rosjava_bootstrap:0.0.0-SNAPSHOT'
+
+  compile 'org.rxtx:rxtx:2.1.7'
 }

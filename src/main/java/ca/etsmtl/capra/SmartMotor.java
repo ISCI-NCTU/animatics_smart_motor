@@ -1,34 +1,115 @@
 package ca.etsmtl.capra;
 
+import geometry_msgs.Twist;
+
 import org.ros.concurrent.CancellableLoop;
+import org.ros.message.MessageListener;
 import org.ros.namespace.GraphName;
 import org.ros.node.AbstractNodeMain;
 import org.ros.node.ConnectedNode;
 import org.ros.node.NodeMain;
+import org.ros.node.parameter.ParameterTree;
 import org.ros.node.topic.Publisher;
+import org.ros.node.topic.Subscriber;
+
+import ca.etsmtl.capra.smartmotor.RobotDrive;
+import ca.etsmtl.capra.smartmotor.io.MotorController;
 
 public class SmartMotor extends AbstractNodeMain
 {
+	////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////// Parameters //////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+	private static String PARAM_NAME_N_MOTORS = "~n_motors";
+	private static String PARAM_NAME_PORT_NAME = "~port";
+	
+	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB2002";
+	private static int DEFAULT_N_MOTORS = 2;
+	
+    ////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////// Topics ///////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
+	private static String TOPIC_NAME_ODOM = "~odom";
+	private static String TOPIC_NAME_CMD_VEL = "cmd_vel";
+	
+	Publisher<nav_msgs.Odometry> odomPublisher;
+	Subscriber<geometry_msgs.Twist> cmdVelSubscriber;
+	
+	private ConnectedNode node;
+	RobotDrive drive;
+	
 	@Override
 	public GraphName getDefaultNodeName()
 	{
-		return GraphName.of("capra/SmartMotor");
+		return GraphName.of("capra_smartmotor");
 	}
+	
+	private void initTopics()
+	{
+		odomPublisher = node.newPublisher(TOPIC_NAME_ODOM, nav_msgs.Odometry._TYPE);
+		
+		cmdVelSubscriber = node.newSubscriber(TOPIC_NAME_CMD_VEL, geometry_msgs.Twist._TYPE);
+		cmdVelSubscriber.addMessageListener(new cmdVelListener());
+	}
+	
+	private class cmdVelListener implements MessageListener<geometry_msgs.Twist>
+	{
+		@Override
+		public void onNewMessage(Twist twist) 
+		{
+			System.out.println(twist.getLinear().getX());
+			System.out.println(twist.getAngular().getZ());
+		}
+	}
+	
+	private void initServices()
+	{
+		
+	}
+	
+	private boolean connectToMotors()
+	{
+		if (true)
+			return true;
+		
+		ParameterTree params = node.getParameterTree();
+		
+		int nMotors = params.getInteger(PARAM_NAME_N_MOTORS, DEFAULT_N_MOTORS);
+		String port = params.getString(PARAM_NAME_PORT_NAME, DEFAULT_PORT_NAME);
+		
+		drive = new RobotDrive(nMotors, port);
+		if ( drive.openPort() )
+		{
+			drive.init();
+			return true;			
+		}
+		
+		return false;
+	}
+	
 
 	@Override
 	public void onStart(final ConnectedNode connectedNode)
 	{
-		final Publisher<nav_msgs.Odometry> publisher = connectedNode.newPublisher("/capra/SmartMotor/odom", nav_msgs.Odometry._TYPE);
-
-		connectedNode.executeCancellableLoop(new CancellableLoop()
+		node = connectedNode;
+		
+		if ( connectToMotors() )
 		{
-			@Override
-			protected void loop() throws InterruptedException
+			initTopics();
+			initServices();
+			
+			connectedNode.executeCancellableLoop(new CancellableLoop()
 			{
-				nav_msgs.Odometry odom = publisher.newMessage();
-				publisher.publish(odom);
-				Thread.sleep(1000);
-			}
-		});
+				@Override
+				protected void loop() throws InterruptedException
+				{
+					Thread.sleep(1000);
+				}
+			});
+		}
+		else 
+		{
+			throw new RuntimeException("Error connecting to the motors");
+		}
 	}
 }

@@ -1,8 +1,6 @@
 <launch>
-    <node pkg="smart_motor"
-        name="smart_motor"
-        type="execute"
-        args="ca.etsmtl.capra.SmartMotor"
-        output="screen">
+    <node pkg="capra_smartmotor" name="capra_smartmotor" type="execute" args="ca.etsmtl.capra.SmartMotor" output="screen">
+        <param name="port" value="/dev/ttyUSB2002"/>
+        <param name="n_motors" value="2"/>
     </node>
 </launch>

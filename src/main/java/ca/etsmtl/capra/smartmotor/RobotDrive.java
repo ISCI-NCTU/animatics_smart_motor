@@ -22,6 +22,7 @@ public class RobotDrive extends AbstractMotor{
 	public SmartMotor[] motor;
 	private double speed=0;
 	public int nbMoteurs;
+	private String portName;
 	public boolean rotating = false;
 	public boolean motorsOff = true;
 	
@@ -39,9 +40,10 @@ public class RobotDrive extends AbstractMotor{
 	 * Constructor with the number of motors to use
 	 * @param nbMoteurs The number of motors
 	 */
-	public RobotDrive(int nbMoteurs){
+	public RobotDrive(int nbMoteurs, String portName){
 
 		this.nbMoteurs = nbMoteurs;
+		this.portName = portName;
 		status = new Status(this);
 
 		//motors will range from [1] to [n]
@@ -297,7 +299,7 @@ public class RobotDrive extends AbstractMotor{
 	}
 
 	public boolean openPort() {
-		boolean success =  MotorController.getInstance().connect(nbMoteurs);;
+		boolean success =  MotorController.getInstance().connect(nbMoteurs, portName);
 		MotorController.getInstance().getInputControl().addObserver(status);
 		return success;
 	}

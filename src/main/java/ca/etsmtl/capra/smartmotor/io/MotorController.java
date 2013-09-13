@@ -1,19 +1,13 @@
 package ca.etsmtl.capra.smartmotor.io;
 import gnu.io.SerialPort;
 
-import java.io.IOException;
-
-import ca.etsmtl.capra.serialmanager.PortDealer;
-import ca.etsmtl.capra.serialmanager.SerialConnection;
-import ca.etsmtl.capra.serialmanager.SerialDevices;
-
-
-public class MotorController implements SerialConnection {
-
+public class MotorController
+{
 	private InputControl inputControl;
 	private SerialCom serialCom;
 	
 	private SerialPort serialPort;
+	private Connector connector;
 
 	//Singleton
 	private static MotorController instance;
@@ -38,24 +32,26 @@ public class MotorController implements SerialConnection {
 	}
 	
 	double[] newCountRL = {0,0};
-
-	@Override
-	public SerialDevices getDeviceType() {
-		return SerialDevices.MOTORS;
-	}	
 	
 	public void setWaitForEcho(boolean val){
 		serialCom.setWaitForEcho(val);
 	}
 
-	public boolean connect(int nbMotors){
+	public boolean connect(int nbMotors, String portName){
 		
 		inputControl = new InputControl(nbMotors);
 		serialCom = new SerialCom(inputControl);
 		
 		try {
-			serialPort = PortDealer.getInstance().requestPort(this);
-		} catch (IOException e1) {
+			connector = new Connector(portName);
+			if ( connector.connect() )
+			{
+				System.out.println("SerialManager: Port " + connector.getSerialPort().getName() + " allocated");
+			    serialPort = connector.getSerialPort();
+			}
+		} 
+		catch (Exception e1) 
+		{
 			e1.printStackTrace();
 			return false;
 		}
@@ -70,12 +66,9 @@ public class MotorController implements SerialConnection {
 		return true;
 	}
 
-	public void disconnect(){
-		try {
-			PortDealer.getInstance().requestDisconnect(this);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public void disconnect()
+	{
+		connector.disconnect();
 	}
 	
 	public InputControl getInputControl(){
