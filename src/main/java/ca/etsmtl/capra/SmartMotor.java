@@ -7,13 +7,11 @@ import org.ros.message.MessageListener;
 import org.ros.namespace.GraphName;
 import org.ros.node.AbstractNodeMain;
 import org.ros.node.ConnectedNode;
-import org.ros.node.NodeMain;
 import org.ros.node.parameter.ParameterTree;
 import org.ros.node.topic.Publisher;
 import org.ros.node.topic.Subscriber;
 
 import ca.etsmtl.capra.smartmotor.RobotDrive;
-import ca.etsmtl.capra.smartmotor.io.MotorController;
 
 public class SmartMotor extends AbstractNodeMain
 {
@@ -22,21 +20,30 @@ public class SmartMotor extends AbstractNodeMain
     ////////////////////////////////////////////////////////////////////////////////
 	private static String PARAM_NAME_N_MOTORS = "~n_motors";
 	private static String PARAM_NAME_PORT_NAME = "~port";
+	private static String PARAM_NAME_WATCHDOG_FREQ = "~watchdog_freq";
 	
 	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB2002";
 	private static int DEFAULT_N_MOTORS = 2;
+	private static int DEFAULT_WATCHDOG_FREQ = 10;
+	private int watchdogFreq = DEFAULT_WATCHDOG_FREQ;
+	
+	ParameterTree params;
 	
     ////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////// Topics ///////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////
 	private static String TOPIC_NAME_ODOM = "~odom";
-	private static String TOPIC_NAME_CMD_VEL = "cmd_vel";
+	private static String TOPIC_NAME_CMD_VEL = "~cmd_vel";
 	
 	Publisher<nav_msgs.Odometry> odomPublisher;
 	Subscriber<geometry_msgs.Twist> cmdVelSubscriber;
 	
 	private ConnectedNode node;
 	RobotDrive drive;
+	
+	float commandedLinearVelocity = 0;
+	float commandedAngularVelocity = 0;
+	boolean newVelocity = false;
 	
 	@Override
 	public GraphName getDefaultNodeName()
@@ -55,10 +62,11 @@ public class SmartMotor extends AbstractNodeMain
 	private class cmdVelListener implements MessageListener<geometry_msgs.Twist>
 	{
 		@Override
-		public void onNewMessage(Twist twist) 
+		public void onNewMessage(Twist cmd_vel) 
 		{
-			System.out.println(twist.getLinear().getX());
-			System.out.println(twist.getAngular().getZ());
+			commandedLinearVelocity = (float)cmd_vel.getLinear().getX();
+			commandedAngularVelocity = (float)cmd_vel.getAngular().getZ();
+			newVelocity = true;			
 		}
 	}
 	
@@ -68,11 +76,8 @@ public class SmartMotor extends AbstractNodeMain
 	}
 	
 	private boolean connectToMotors()
-	{
-		if (true)
-			return true;
+	{	
 		
-		ParameterTree params = node.getParameterTree();
 		
 		int nMotors = params.getInteger(PARAM_NAME_N_MOTORS, DEFAULT_N_MOTORS);
 		String port = params.getString(PARAM_NAME_PORT_NAME, DEFAULT_PORT_NAME);
@@ -81,6 +86,7 @@ public class SmartMotor extends AbstractNodeMain
 		if ( drive.openPort() )
 		{
 			drive.init();
+			drive.setGlobalAccel(10);
 			return true;			
 		}
 		
@@ -92,18 +98,31 @@ public class SmartMotor extends AbstractNodeMain
 	public void onStart(final ConnectedNode connectedNode)
 	{
 		node = connectedNode;
+		params = node.getParameterTree();
 		
 		if ( connectToMotors() )
 		{
 			initTopics();
 			initServices();
 			
+			// Watchdog loop
+			watchdogFreq = params.getInteger(PARAM_NAME_WATCHDOG_FREQ, DEFAULT_WATCHDOG_FREQ);
 			connectedNode.executeCancellableLoop(new CancellableLoop()
 			{
 				@Override
 				protected void loop() throws InterruptedException
 				{
-					Thread.sleep(1000);
+					if ( newVelocity )
+					{
+						drive.setVelocity(commandedLinearVelocity, commandedAngularVelocity);
+						newVelocity = false;
+					}
+					else
+					{
+						drive.setVelocity(0, 0);
+					}
+					
+					Thread.sleep(1000 / watchdogFreq);					
 				}
 			});
 		}

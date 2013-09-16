@@ -19,7 +19,7 @@ public class RobotDrive extends AbstractMotor{
 
 	private Status status;
 
-	public SmartMotor[] motor;
+	public Motor[] motor;
 	private double speed=0;
 	public int nbMoteurs;
 	private String portName;
@@ -47,11 +47,11 @@ public class RobotDrive extends AbstractMotor{
 		status = new Status(this);
 
 		//motors will range from [1] to [n]
-		motor = new SmartMotor[nbMoteurs+1];
+		motor = new Motor[nbMoteurs+1];
 		motor[0] = null;
 
 		for(int i = 1; i <= nbMoteurs; i++){
-			motor[i] = new SmartMotor(i);
+			motor[i] = new Motor(i);
 		}
 
 	}
@@ -141,6 +141,21 @@ public class RobotDrive extends AbstractMotor{
 			if(moving)
 				start();
 		}
+	}
+	
+	public void setVelocity ( float linearVelocity, float angularVelocity )
+	{
+		float leftSpeed = linearVelocity - angularVelocity * (float)ROBOT_WIDTH/2.0f;
+		float leftAccel = globalAccel;
+		
+		float rightSpeed = linearVelocity + angularVelocity * (float)ROBOT_WIDTH/2.0f;
+		float rightAccel = globalAccel;
+		
+		System.out.println(leftSpeed + " - " + rightSpeed);
+		
+		setIndividualSpeed(-rightSpeed, rightAccel, leftSpeed, leftAccel);
+		
+		start();		
 	}
 	
 	public void left(){
