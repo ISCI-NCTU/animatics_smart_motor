@@ -1,6 +1,10 @@
 package ca.etsmtl.capra;
 
+import java.util.Observable;
+import java.util.Observer;
+
 import geometry_msgs.Twist;
+import nav_msgs.Odometry;
 
 import org.ros.concurrent.CancellableLoop;
 import org.ros.message.MessageListener;
@@ -12,6 +16,7 @@ import org.ros.node.topic.Publisher;
 import org.ros.node.topic.Subscriber;
 
 import ca.etsmtl.capra.smartmotor.RobotDrive;
+import ca.etsmtl.capra.smartmotor.io.MotorController;
 
 public class SmartMotor extends AbstractNodeMain
 {
@@ -20,12 +25,14 @@ public class SmartMotor extends AbstractNodeMain
     ////////////////////////////////////////////////////////////////////////////////
 	private static String PARAM_NAME_N_MOTORS = "~n_motors";
 	private static String PARAM_NAME_PORT_NAME = "~port";
-	private static String PARAM_NAME_WATCHDOG_FREQ = "~watchdog_freq";
+	private static String PARAM_NAME_WATCHDOG_FREQ = "~watchdog_rate";
 	
 	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB2002";
 	private static int DEFAULT_N_MOTORS = 2;
-	private static int DEFAULT_WATCHDOG_FREQ = 10;
-	private int watchdogFreq = DEFAULT_WATCHDOG_FREQ;
+	private static int DEFAULT_WATCHDOG_RATE = 5;
+	private int watchdogFreq = DEFAULT_WATCHDOG_RATE;
+	
+	private double covariance = 100.0;
 	
 	ParameterTree params;
 	
@@ -35,15 +42,15 @@ public class SmartMotor extends AbstractNodeMain
 	private static String TOPIC_NAME_ODOM = "~odom";
 	private static String TOPIC_NAME_CMD_VEL = "~cmd_vel";
 	
-	Publisher<nav_msgs.Odometry> odomPublisher;
-	Subscriber<geometry_msgs.Twist> cmdVelSubscriber;
+	private Publisher<nav_msgs.Odometry> odomPublisher;
+	private Subscriber<geometry_msgs.Twist> cmdVelSubscriber;
 	
 	private ConnectedNode node;
-	RobotDrive drive;
+	private RobotDrive drive;
 	
-	float commandedLinearVelocity = 0;
-	float commandedAngularVelocity = 0;
-	boolean newVelocity = false;
+	private float commandedLinearVelocity = 0;
+	private float commandedAngularVelocity = 0;
+	private long lastVelocityUpdate = 0;
 	
 	@Override
 	public GraphName getDefaultNodeName()
@@ -64,9 +71,15 @@ public class SmartMotor extends AbstractNodeMain
 		@Override
 		public void onNewMessage(Twist cmd_vel) 
 		{
-			commandedLinearVelocity = (float)cmd_vel.getLinear().getX();
-			commandedAngularVelocity = (float)cmd_vel.getAngular().getZ();
-			newVelocity = true;			
+			float newLinear = (float)cmd_vel.getLinear().getX();
+			float newAngular = (float)cmd_vel.getAngular().getZ();
+			lastVelocityUpdate = System.currentTimeMillis();
+			if ( commandedLinearVelocity != newLinear || commandedAngularVelocity != newAngular )
+			{
+				commandedLinearVelocity = newLinear;
+				commandedAngularVelocity = newAngular;
+				drive.setVelocity(commandedLinearVelocity, commandedAngularVelocity);
+			}
 		}
 	}
 	
@@ -77,8 +90,6 @@ public class SmartMotor extends AbstractNodeMain
 	
 	private boolean connectToMotors()
 	{	
-		
-		
 		int nMotors = params.getInteger(PARAM_NAME_N_MOTORS, DEFAULT_N_MOTORS);
 		String port = params.getString(PARAM_NAME_PORT_NAME, DEFAULT_PORT_NAME);
 		
@@ -93,6 +104,69 @@ public class SmartMotor extends AbstractNodeMain
 		return false;
 	}
 	
+	private void initWatchdog ( )
+	{
+		// Watchdog loop
+		watchdogFreq = params.getInteger(PARAM_NAME_WATCHDOG_FREQ, DEFAULT_WATCHDOG_RATE);
+		node.executeCancellableLoop(new CancellableLoop()
+		{
+			@Override
+			protected void loop() throws InterruptedException
+			{
+				if ( drive.isMoving() && System.currentTimeMillis() - lastVelocityUpdate > 1000 / watchdogFreq )
+				{
+					commandedLinearVelocity = 0;
+					commandedAngularVelocity = 0;
+					drive.setVelocity(commandedLinearVelocity, commandedAngularVelocity);
+				}
+				
+				Thread.sleep(1000 / watchdogFreq);		
+			}
+		});
+	}
+	
+	private void initTelemetryPublisher()
+	{
+		MotorController.getInstance().getInputControl().addObserver(new Observer() 
+		{			
+			@Override
+			public void update(Observable arg0, Object arg1)
+			{
+				double[] pos = drive.getPosition();
+				
+				Odometry odom = node.getServiceRequestMessageFactory().newFromType(nav_msgs.Odometry._TYPE);
+				
+				// Position
+				geometry_msgs.Point position = odom.getPose().getPose().getPosition();
+				position.setX(pos[0]);
+				position.setY(pos[1]);
+				position.setZ(0);
+				
+				// Covariance de la position
+				//Todo: Trouver la vraie covariance un jour
+				odom.getPose().setCovariance(new double[]{ covariance, 0, 0, 0, 0, 0,
+						                                   0, covariance, 0, 0, 0, 0,
+						                                   0, 0, covariance, 0, 0, 0,
+						                                   0, 0, 0, covariance, 0, 0,
+						                                   0, 0, 0, 0, covariance, 0,
+						                                   0, 0, 0, 0, 0, covariance});
+				
+				// Velocity
+				//Todo: Modifier pour avoir la vraie valeur
+				odom.getTwist().getTwist().getLinear().setX(commandedLinearVelocity);
+				odom.getTwist().getTwist().getAngular().setZ(commandedAngularVelocity);
+				
+				// Covariance de la velocité
+				//Todo Trouver la vraie covariance
+				odom.getTwist().setCovariance(new double[]{ covariance, 0, 0, 0, 0, 0,
+									                        0, covariance, 0, 0, 0, 0,
+									                        0, 0, covariance, 0, 0, 0,
+									                        0, 0, 0, covariance, 0, 0,
+									                        0, 0, 0, 0, covariance, 0,
+									                        0, 0, 0, 0, 0, covariance});
+			}
+		});
+	}
 
 	@Override
 	public void onStart(final ConnectedNode connectedNode)
@@ -104,27 +178,8 @@ public class SmartMotor extends AbstractNodeMain
 		{
 			initTopics();
 			initServices();
-			
-			// Watchdog loop
-			watchdogFreq = params.getInteger(PARAM_NAME_WATCHDOG_FREQ, DEFAULT_WATCHDOG_FREQ);
-			connectedNode.executeCancellableLoop(new CancellableLoop()
-			{
-				@Override
-				protected void loop() throws InterruptedException
-				{
-					if ( newVelocity )
-					{
-						drive.setVelocity(commandedLinearVelocity, commandedAngularVelocity);
-						newVelocity = false;
-					}
-					else
-					{
-						drive.setVelocity(0, 0);
-					}
-					
-					Thread.sleep(1000 / watchdogFreq);					
-				}
-			});
+			initWatchdog();
+			initTelemetryPublisher();
 		}
 		else 
 		{

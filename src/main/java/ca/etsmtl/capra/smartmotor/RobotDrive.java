@@ -153,6 +153,7 @@ public class RobotDrive extends AbstractMotor{
 		
 		System.out.println(leftSpeed + " - " + rightSpeed);
 		
+		setSpeedMode();
 		setIndividualSpeed(-rightSpeed, rightAccel, leftSpeed, leftAccel);
 		
 		start();		
