@@ -130,7 +130,7 @@ public class SmartMotor extends AbstractNodeMain
 			@Override
 			protected void loop() throws InterruptedException
 			{
-				if ( drive.isMoving() && System.currentTimeMillis() - lastVelocityUpdate > 1000 / watchdogFreq
+				if ( drive.isMoving() && System.currentTimeMillis() - lastVelocityUpdate > 2 * (1000 / watchdogFreq)
 					 && commandType == CommandType.CMD_VEL )
 				{
 					commandedLinearVelocity = 0;
@@ -150,6 +150,7 @@ public class SmartMotor extends AbstractNodeMain
 			@Override
 			public void update(Observable arg0, Object arg1)
 			{
+				/*
 				double[] pos = drive.getPosition();
 				
 				Odometry odom = node.getServiceRequestMessageFactory().newFromType(nav_msgs.Odometry._TYPE);
@@ -181,15 +182,13 @@ public class SmartMotor extends AbstractNodeMain
 									                        0, 0, covariance, 0, 0, 0,
 									                        0, 0, 0, covariance, 0, 0,
 									                        0, 0, 0, 0, covariance, 0,
-									                        0, 0, 0, 0, 0, covariance});
+									                        0, 0, 0, 0, 0, covariance});*/
 			}
 		});
 	}
 
 	private void init ( )
 	{
-		loadParams();
-		
 		initTopics();
 		initServices();
 		initWatchdog();
@@ -200,6 +199,7 @@ public class SmartMotor extends AbstractNodeMain
 	public void onStart(final ConnectedNode connectedNode)
 	{
 		node = connectedNode;
+		loadParams();
 		
 		if ( connectToMotors() )
 			init();
