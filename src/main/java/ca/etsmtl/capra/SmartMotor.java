@@ -150,10 +150,9 @@ public class SmartMotor extends AbstractNodeMain
 			@Override
 			public void update(Observable arg0, Object arg1)
 			{
-				/*
 				double[] pos = drive.getPosition();
 				
-				Odometry odom = node.getServiceRequestMessageFactory().newFromType(nav_msgs.Odometry._TYPE);
+				nav_msgs.Odometry odom = node.getTopicMessageFactory().newFromType(nav_msgs.Odometry._TYPE);
 				
 				// Position
 				geometry_msgs.Point position = odom.getPose().getPose().getPosition();
@@ -182,7 +181,9 @@ public class SmartMotor extends AbstractNodeMain
 									                        0, 0, covariance, 0, 0, 0,
 									                        0, 0, 0, covariance, 0, 0,
 									                        0, 0, 0, 0, covariance, 0,
-									                        0, 0, 0, 0, 0, covariance});*/
+									                        0, 0, 0, 0, 0, covariance});
+				
+				odomPublisher.publish(odom);
 			}
 		});
 	}
