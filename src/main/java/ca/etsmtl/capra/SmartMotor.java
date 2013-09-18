@@ -26,12 +26,16 @@ public class SmartMotor extends AbstractNodeMain
 	private static String PARAM_NAME_N_MOTORS = "~n_motors";
 	private static String PARAM_NAME_PORT_NAME = "~port";
 	private static String PARAM_NAME_WATCHDOG_FREQ = "~watchdog_rate";
+	private static String PARAM_NAME_COVARIANCE = "~covariance";
 	
 	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB2002";
 	private static int DEFAULT_N_MOTORS = 2;
 	private static int DEFAULT_WATCHDOG_RATE = 5;
-	private int watchdogFreq = DEFAULT_WATCHDOG_RATE;
+	private static double DEFAULT_COVARIANCE = 100.0;
 	
+	private int nMotors;
+	private String portName;
+	private int watchdogFreq = DEFAULT_WATCHDOG_RATE;	
 	private double covariance = 100.0;
 	
 	ParameterTree params;
@@ -45,8 +49,13 @@ public class SmartMotor extends AbstractNodeMain
 	private Publisher<nav_msgs.Odometry> odomPublisher;
 	private Subscriber<geometry_msgs.Twist> cmdVelSubscriber;
 	
+    ////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////// Other ////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////
 	private ConnectedNode node;
 	private RobotDrive drive;
+	
+	private CommandType commandType = CommandType.CMD_VEL;
 	
 	private float commandedLinearVelocity = 0;
 	private float commandedAngularVelocity = 0;
@@ -66,6 +75,16 @@ public class SmartMotor extends AbstractNodeMain
 		cmdVelSubscriber.addMessageListener(new cmdVelListener());
 	}
 	
+	private void loadParams ( )
+	{
+		params = node.getParameterTree();
+		
+		nMotors = params.getInteger(PARAM_NAME_N_MOTORS, DEFAULT_N_MOTORS);
+		portName = params.getString(PARAM_NAME_PORT_NAME, DEFAULT_PORT_NAME);
+		watchdogFreq = params.getInteger(PARAM_NAME_WATCHDOG_FREQ, DEFAULT_WATCHDOG_RATE);
+		covariance = params.getDouble(PARAM_NAME_COVARIANCE, DEFAULT_COVARIANCE);
+	}
+	
 	private class cmdVelListener implements MessageListener<geometry_msgs.Twist>
 	{
 		@Override
@@ -73,7 +92,10 @@ public class SmartMotor extends AbstractNodeMain
 		{
 			float newLinear = (float)cmd_vel.getLinear().getX();
 			float newAngular = (float)cmd_vel.getAngular().getZ();
+			
 			lastVelocityUpdate = System.currentTimeMillis();
+			commandType = CommandType.CMD_VEL;
+			
 			if ( commandedLinearVelocity != newLinear || commandedAngularVelocity != newAngular )
 			{
 				commandedLinearVelocity = newLinear;
@@ -89,11 +111,8 @@ public class SmartMotor extends AbstractNodeMain
 	}
 	
 	private boolean connectToMotors()
-	{	
-		int nMotors = params.getInteger(PARAM_NAME_N_MOTORS, DEFAULT_N_MOTORS);
-		String port = params.getString(PARAM_NAME_PORT_NAME, DEFAULT_PORT_NAME);
-		
-		drive = new RobotDrive(nMotors, port);
+	{		
+		drive = new RobotDrive(nMotors, portName);
 		if ( drive.openPort() )
 		{
 			drive.init();
@@ -106,14 +125,13 @@ public class SmartMotor extends AbstractNodeMain
 	
 	private void initWatchdog ( )
 	{
-		// Watchdog loop
-		watchdogFreq = params.getInteger(PARAM_NAME_WATCHDOG_FREQ, DEFAULT_WATCHDOG_RATE);
 		node.executeCancellableLoop(new CancellableLoop()
 		{
 			@Override
 			protected void loop() throws InterruptedException
 			{
-				if ( drive.isMoving() && System.currentTimeMillis() - lastVelocityUpdate > 1000 / watchdogFreq )
+				if ( drive.isMoving() && System.currentTimeMillis() - lastVelocityUpdate > 1000 / watchdogFreq
+					 && commandType == CommandType.CMD_VEL )
 				{
 					commandedLinearVelocity = 0;
 					commandedAngularVelocity = 0;
@@ -168,22 +186,24 @@ public class SmartMotor extends AbstractNodeMain
 		});
 	}
 
+	private void init ( )
+	{
+		loadParams();
+		
+		initTopics();
+		initServices();
+		initWatchdog();
+		initTelemetryPublisher();
+	}
+	
 	@Override
 	public void onStart(final ConnectedNode connectedNode)
 	{
 		node = connectedNode;
-		params = node.getParameterTree();
 		
 		if ( connectToMotors() )
-		{
-			initTopics();
-			initServices();
-			initWatchdog();
-			initTelemetryPublisher();
-		}
+			init();
 		else 
-		{
 			throw new RuntimeException("Error connecting to the motors");
-		}
 	}
 }
