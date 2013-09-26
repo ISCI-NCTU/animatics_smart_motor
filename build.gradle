@@ -9,30 +9,57 @@ apply plugin: 'java'
 apply plugin: 'maven'
 
 // uncomment to create an eclipse project using 'gradle eclipse'
-apply plugin: 'eclipse'
+// apply plugin: 'eclipse'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 task deployApp(dependsOn: 'installApp') << {
-  File binDir = new File(project.projectDir, '/bin')
-  if (! binDir.isDirectory()) {
-    println "Creating $binDir directory"
-    binDir.mkdirs()
-  }
-  File link = new File(binDir,"execute")
-  File target = new File(project.projectDir, "build/install/$project.name/bin/$project.name")
-  println "Creating symlink from $link.absolutePath to $target.absolutePath"
-  ant.symlink(link: link.absolutePath, resource: target.absolutePath)
+    File binDir = new File(project.projectDir, '/bin')
+    if (!binDir.isDirectory()) {
+        println "Creating $binDir directory"
+        binDir.mkdirs()
+    }
+    File link = new File(binDir, "execute")
+    File target = new File(project.projectDir, "build/install/$project.name/bin/$project.name")
+    println "Creating symlink from $link.absolutePath to $target.absolutePath"
+    ant.symlink(link: link.absolutePath, resource: target.absolutePath)
 }
 
+buildscript {
+    def rosMavenPath = "$System.env.ROS_MAVEN_PATH".split(':').collect { 'file://' + it }
+    repositories {
+        rosMavenPath.each { p ->
+            maven {
+                url p
+            }
+        }
+        mavenCentral()
+        mavenLocal()
+        maven {
+            url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master'
+        }
+    }
+
+    dependencies {
+        classpath 'org.ros.rosjava_bootstrap:gradle_plugins:0.1.+'
+        classpath 'org.ros.rosjava_core:rosjava:0.1.+'
+    }
+}
 
 // custom maven repository for some rosjava dependencies
 repositories {
-  mavenLocal()
-  maven {
-    url 'http://robotbrains.hideho.org/nexus/content/groups/ros-public'
-  }
+    def rosMavenPath = "$System.env.ROS_MAVEN_PATH".split(':').collect { 'file://' + it }
+    rosMavenPath.each { p ->
+        maven {
+            url p
+        }
+    }
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master'
+    }
 }
 
 // we need this for maven installation
@@ -40,9 +67,9 @@ version = '0.0.0-SNAPSHOT'
 group = 'ros.capra'
 
 dependencies {
-  compile 'ros.rosjava_core:rosjava:0.0.0-SNAPSHOT'
-  compile 'ros.rosjava_core:rosjava_messages:0.0.0-SNAPSHOT'
-  compile 'ros.rosjava_core:rosjava_bootstrap:0.0.0-SNAPSHOT'
+    compile 'org.ros.rosjava_core:rosjava:0.1.+'
+    compile 'org.ros.rosjava_messages:sensor_msgs:1.10.+'
+    compile 'org.ros.rosjava_bootstrap:gradle_plugins:0.1.+'
 
-  compile 'org.rxtx:rxtx:2.1.7'
+    compile 'org.rxtx:rxtx:2.1.7'
 }
