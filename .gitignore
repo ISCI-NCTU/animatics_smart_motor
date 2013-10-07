@@ -2,10 +2,13 @@
 bin
 build
 .gradle
+# Eclipse files #
+.project
+.classpath
+.settings
 # Package Files #
 *.jar
 *.war
 *.ear
 *.iml
-.settings
 .idea

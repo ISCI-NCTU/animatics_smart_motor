@@ -7,6 +7,7 @@ mainClassName = 'org.ros.RosRun'
 
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'eclipse'
 
 // uncomment to create an eclipse project using 'gradle eclipse'
 // apply plugin: 'eclipse'
