@@ -1,5 +1,5 @@
 <launch>
-    <node pkg="capra_smartmotor" name="capra_smartmotor" type="execute" args="ca.etsmtl.capra.SmartMotor" output="screen">
+    <node pkg="rosjava" name="capra_smartmotor" type="capra_smartmotor" args="ca.etsmtl.capra.SmartMotor" output="screen">
         <param name="port" value="/dev/ttyUSB2002"/>
         <param name="n_motors" value="2"/>
     </node>

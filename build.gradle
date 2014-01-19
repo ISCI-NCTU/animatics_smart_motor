@@ -3,30 +3,36 @@
 
 apply plugin: 'application'
 
-mainClassName = 'org.ros.RosRun'
-
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'eclipse'
+apply plugin: 'ros-java'
 
-// uncomment to create an eclipse project using 'gradle eclipse'
-// apply plugin: 'eclipse'
+// to create an eclipse project using 'gradle eclipse'
+apply plugin: 'eclipse'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
+mainClassName = 'org.ros.RosRun'
+
 task deployApp(dependsOn: 'installApp') << {
     File binDir = new File(project.projectDir, '/bin')
-    if (!binDir.isDirectory()) {
+    if (! binDir.isDirectory()) {
         println "Creating $binDir directory"
         binDir.mkdirs()
     }
-    File link = new File(binDir, "execute")
+    File link = new File(binDir,"execute")
     File target = new File(project.projectDir, "build/install/$project.name/bin/$project.name")
     println "Creating symlink from $link.absolutePath to $target.absolutePath"
     ant.symlink(link: link.absolutePath, resource: target.absolutePath)
 }
 
+run {  
+  args 'ca.etsmtl.capra.SmartMotor'
+}
+
+// enable to look up the ros-java gradle plugin and rosjava dependencies
 buildscript {
     def rosMavenPath = "$System.env.ROS_MAVEN_PATH".split(':').collect { 'file://' + it }
     repositories {
@@ -41,36 +47,19 @@ buildscript {
             url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master'
         }
     }
-
     dependencies {
-        classpath 'org.ros.rosjava_bootstrap:gradle_plugins:0.1.+'
-        classpath 'org.ros.rosjava_core:rosjava:0.1.+'
+        classpath group: 'org.ros.rosjava_bootstrap', name: 'gradle_plugins', version: '0.1.+'
     }
 }
 
-// custom maven repository for some rosjava dependencies
-repositories {
-    def rosMavenPath = "$System.env.ROS_MAVEN_PATH".split(':').collect { 'file://' + it }
-    rosMavenPath.each { p ->
-        maven {
-            url p
-        }
-    }
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master'
-    }
-}
-
-// we need this for maven installation
 version = '0.0.0-SNAPSHOT'
 group = 'ros.capra'
 
 dependencies {
-    compile 'org.ros.rosjava_core:rosjava:0.1.+'
-    compile 'org.ros.rosjava_messages:sensor_msgs:1.10.+'
-    compile 'org.ros.rosjava_bootstrap:gradle_plugins:0.1.+'
+  compile 'org.ros.rosjava_core:rosjava:0.1.+'
+  compile 'org.ros.rosjava_messages:std_msgs:0.5.+-SNAPSHOT'
+  compile 'org.ros.rosjava_messages:sensor_msgs:1.10.+'
+  compile 'org.ros.rosjava_bootstrap:message_generation:0.1.+-SNAPSHOT'
 
-    compile 'org.rxtx:rxtx:2.1.7'
+  compile 'org.rxtx:rxtx:2.1.7'
 }
