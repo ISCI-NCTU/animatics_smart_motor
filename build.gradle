@@ -1,20 +1,25 @@
 // The Application plugin and mainClassName attribute are only required if
 // your package is used as a binary.
 
-apply plugin: 'application'
-
 apply plugin: 'java'
-apply plugin: 'maven'
-apply plugin: 'eclipse'
-apply plugin: 'ros-java'
-
-// to create an eclipse project using 'gradle eclipse'
-apply plugin: 'eclipse'
+apply plugin: 'application'
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 mainClassName = 'org.ros.RosRun'
+
+repositories {
+    mavenCentral()
+
+    maven {
+        url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master'
+    }
+
+    maven {
+        url 'http://appart.mathgl.com/nexus/content/groups/public/'
+    }
+}
 
 task deployApp(dependsOn: 'installApp') << {
     File binDir = new File(project.projectDir, '/bin')
@@ -32,34 +37,17 @@ run {
   args 'ca.etsmtl.capra.SmartMotor'
 }
 
-// enable to look up the ros-java gradle plugin and rosjava dependencies
-buildscript {
-    def rosMavenPath = "$System.env.ROS_MAVEN_PATH".split(':').collect { 'file://' + it }
-    repositories {
-        rosMavenPath.each { p ->
-            maven {
-                url p
-            }
-        }
-        mavenCentral()
-        mavenLocal()
-        maven {
-            url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master'
-        }
-    }
-    dependencies {
-        classpath group: 'org.ros.rosjava_bootstrap', name: 'gradle_plugins', version: '0.1.+'
-    }
-}
-
-version = '0.0.0-SNAPSHOT'
+version = '0.0.1-SNAPSHOT'
 group = 'ros.capra'
 
 dependencies {
   compile 'org.ros.rosjava_core:rosjava:0.1.+'
   compile 'org.ros.rosjava_messages:std_msgs:0.5.+-SNAPSHOT'
   compile 'org.ros.rosjava_messages:sensor_msgs:1.10.+'
+  compile 'org.ros.rosjava_messages:tf:1.10.+'
   compile 'org.ros.rosjava_bootstrap:message_generation:0.1.+-SNAPSHOT'
-
-  compile 'org.rxtx:rxtx:2.1.7'
+  compile 'org.ros.rosjava_bootstrap:gradle_plugins:0.1.+'
+  compile 'ca.etsmtl.capra:SmartMotorLib:1.0-SNAPSHOT'
+  compile 'org.ros.rosjava_core:rosjava_geometry:0.1.+'
 }
+
