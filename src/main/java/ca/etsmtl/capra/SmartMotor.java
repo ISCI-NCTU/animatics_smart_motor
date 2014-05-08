@@ -1,8 +1,5 @@
 package ca.etsmtl.capra;
 
-import java.util.Observable;
-import java.util.Observer;
-
 import ca.etsmtl.capra.smartmotorlib.Configuration;
 import ca.etsmtl.capra.smartmotorlib.listeners.PositionListener;
 import ca.etsmtl.capra.smartmotorlib.robots.Robot;
@@ -21,6 +18,9 @@ import org.ros.node.topic.Subscriber;
 
 import ca.etsmtl.capra.smartmotorlib.MotorController;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
 public class SmartMotor extends AbstractNodeMain
 {
 	////////////////////////////////////////////////////////////////////////////////
@@ -30,15 +30,18 @@ public class SmartMotor extends AbstractNodeMain
 	private static String PARAM_NAME_PORT_NAME = "~port";
 	private static String PARAM_NAME_WATCHDOG_FREQ = "~watchdog_rate";
 	private static String PARAM_NAME_COVARIANCE = "~covariance";
+    private static String PARAM_NAME_PUBLISH_RATE = "~publish_rate";
 	
-	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB1002";
+	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB1001";
 	private static int DEFAULT_N_MOTORS = 2;
 	private static int DEFAULT_WATCHDOG_RATE = 5;
 	private static double DEFAULT_COVARIANCE = 100.0;
+    private static int DEFAULT_PUBLISH_RATE = 25;
 	
 	private int nMotors;
 	private String portName;
-	private int watchdogFreq = DEFAULT_WATCHDOG_RATE;	
+	private int watchdogFreq = DEFAULT_WATCHDOG_RATE;
+    private int publishRate = DEFAULT_PUBLISH_RATE;
 	private double covariance = 100.0;
 	
 	ParameterTree params;
@@ -63,7 +66,12 @@ public class SmartMotor extends AbstractNodeMain
 	private float commandedLinearVelocity = 0;
 	private float commandedAngularVelocity = 0;
 	private long lastVelocityUpdate = 0;
-	
+
+    private Position position = new Position();
+    private Semaphore positionSem = new Semaphore(0);
+    private long lastPublish = 0;
+    private long lastPositionUpdate = 0;
+
 	@Override
 	public GraphName getDefaultNodeName()
 	{
@@ -86,6 +94,7 @@ public class SmartMotor extends AbstractNodeMain
 		portName = params.getString(PARAM_NAME_PORT_NAME, DEFAULT_PORT_NAME);
 		watchdogFreq = params.getInteger(PARAM_NAME_WATCHDOG_FREQ, DEFAULT_WATCHDOG_RATE);
 		covariance = params.getDouble(PARAM_NAME_COVARIANCE, DEFAULT_COVARIANCE);
+        publishRate = params.getInteger(PARAM_NAME_PUBLISH_RATE, DEFAULT_PUBLISH_RATE);
 	}
 	
 	private class cmdVelListener implements MessageListener<geometry_msgs.Twist>
@@ -142,44 +151,66 @@ public class SmartMotor extends AbstractNodeMain
 			}
 		});
 	}
+
+    private void initOdomBroadcaster ( )
+    {
+        node.executeCancellableLoop(new CancellableLoop()
+        {
+            @Override
+            protected void loop() throws InterruptedException
+            {
+                boolean newPos = positionSem.tryAcquire(10, TimeUnit.MILLISECONDS);
+                long now = System.currentTimeMillis();
+
+                if ( newPos || lastPublish + (1000 / publishRate) <= now )
+                {
+                    lastPublish = now;
+                    nav_msgs.Odometry odom = node.getTopicMessageFactory().newFromType(nav_msgs.Odometry._TYPE);
+
+                    odom.getHeader().setFrameId("odom");
+                    odom.setChildFrameId("base_link");
+                    odom.getHeader().setStamp(org.ros.message.Time.fromMillis((newPos)? lastPositionUpdate : now));
+
+                    // Position
+                    geometry_msgs.Point pos = odom.getPose().getPose().getPosition();
+                    pos.setX(position.getX());
+                    pos.setY(position.getY());
+                    pos.setZ(0);
+
+                    // Orientation
+                    Quaternion quaternion = QuaternionUtils.createQuaternionMsgFromYaw(node, position.getTheta());
+                    odom.getPose().getPose().setOrientation(quaternion);
+
+                    // Velocity
+                    //Todo: Modifier pour avoir la vraie valeur
+                    odom.getTwist().getTwist().getLinear().setX(commandedLinearVelocity);
+                    odom.getTwist().getTwist().getAngular().setZ(commandedAngularVelocity);
+
+                    // Covariance
+                    //Todo Trouver la vraie covariance
+                    double[] covariance_matrix = new double[]{  covariance, 0, 0, 0, 0, 0,
+                            0, covariance, 0, 0, 0, 0,
+                            0, 0, covariance, 0, 0, 0,
+                            0, 0, 0, covariance, 0, 0,
+                            0, 0, 0, 0, covariance, 0,
+                            0, 0, 0, 0, 0, covariance};
+                    odom.getPose().setCovariance(covariance_matrix);
+                    odom.getTwist().setCovariance(covariance_matrix);
+
+                    odomPublisher.publish(odom);
+                }
+            }
+        });
+    }
 	
-	private void initTelemetryPublishers()
+	private void initPositionListener()
 	{
         motors.setPositionListener(new PositionListener() {
             @Override
-            public void onNewPosition(Position pos) {
-                nav_msgs.Odometry odom = node.getTopicMessageFactory().newFromType(nav_msgs.Odometry._TYPE);
-
-                odom.getHeader().setFrameId("odom");
-                odom.setChildFrameId("base_link");
-
-                // Position
-                geometry_msgs.Point position = odom.getPose().getPose().getPosition();
-                position.setX(pos.getX());
-                position.setY(pos.getY());
-                position.setZ(0);
-
-                // Orientation
-                Quaternion quaternion = QuaternionUtils.createQuaternionMsgFromYaw(node, pos.getTheta());
-                odom.getPose().getPose().setOrientation(quaternion);
-
-                // Velocity
-                //Todo: Modifier pour avoir la vraie valeur
-                odom.getTwist().getTwist().getLinear().setX(commandedLinearVelocity);
-                odom.getTwist().getTwist().getAngular().setZ(commandedAngularVelocity);
-
-                // Covariance
-                //Todo Trouver la vraie covariance
-                double[] covariance_matrix = new double[]{  covariance, 0, 0, 0, 0, 0,
-                                                            0, covariance, 0, 0, 0, 0,
-                                                            0, 0, covariance, 0, 0, 0,
-                                                            0, 0, 0, covariance, 0, 0,
-                                                            0, 0, 0, 0, covariance, 0,
-                                                            0, 0, 0, 0, 0, covariance};
-                odom.getPose().setCovariance(covariance_matrix);
-                odom.getTwist().setCovariance(covariance_matrix);
-
-                odomPublisher.publish(odom);
+            public void onNewPosition(Position pos, long timestamp) {
+                position = pos;
+                positionSem.release();
+                lastPositionUpdate = timestamp;
             }
         });
 	}
@@ -189,7 +220,8 @@ public class SmartMotor extends AbstractNodeMain
 		initTopics();
 		initServices();
 		initWatchdog();
-		initTelemetryPublishers();
+		initPositionListener();
+        initOdomBroadcaster();
 	}
 	
 	@Override
