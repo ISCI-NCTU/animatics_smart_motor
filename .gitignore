@@ -2,6 +2,7 @@
 bin
 build
 .gradle
+classes
 # Eclipse files #
 .project
 .classpath

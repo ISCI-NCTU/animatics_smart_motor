@@ -15,7 +15,6 @@ import org.ros.node.ConnectedNode;
 import org.ros.node.parameter.ParameterTree;
 import org.ros.node.topic.Publisher;
 import org.ros.node.topic.Subscriber;
-
 import ca.etsmtl.capra.smartmotorlib.MotorController;
 
 import java.util.concurrent.Semaphore;

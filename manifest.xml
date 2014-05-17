@@ -1,13 +1,13 @@
 <package>
-  <description brief="smart_motor">
+  <description brief="capra_smart_motor">
 
-     smart_motor
+     capra_smart_motor
 
   </description>
   <author>Club Capra</author>
   <license>GPL</license>
   <review status="unreviewed" notes=""/>
-  <url>https://github.com/clubcapra/Ibex/tree/master/src/smart_motor</url>
+  <url>https://github.com/clubcapra/Ibex/tree/master/src/rosjava/capra_smartmotor</url>
 
 </package>
 
