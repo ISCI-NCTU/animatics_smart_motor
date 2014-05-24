@@ -1,11 +1,13 @@
 package ca.etsmtl.capra;
 
 import ca.etsmtl.capra.smartmotorlib.Configuration;
+import ca.etsmtl.capra.smartmotorlib.listeners.ConnectionListener;
 import ca.etsmtl.capra.smartmotorlib.listeners.PositionListener;
 import ca.etsmtl.capra.smartmotorlib.robots.Robot;
 import ca.etsmtl.capra.smartmotorlib.Position;
 import geometry_msgs.Quaternion;
 import geometry_msgs.Twist;
+import capra_msgs.EStopStatus;
 
 import org.ros.concurrent.CancellableLoop;
 import org.ros.message.MessageListener;
@@ -50,8 +52,10 @@ public class SmartMotor extends AbstractNodeMain
     ////////////////////////////////////////////////////////////////////////////////
 	private static String TOPIC_NAME_ODOM = "odom";
 	private static String TOPIC_NAME_CMD_VEL = "~cmd_vel";
+    private static String TOPIC_NAME_ESTOP = "~estop";
 	
 	private Publisher<nav_msgs.Odometry> odomPublisher;
+    private Publisher<EStopStatus> eStopPublisher;
 	private Subscriber<geometry_msgs.Twist> cmdVelSubscriber;
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -80,7 +84,8 @@ public class SmartMotor extends AbstractNodeMain
 	private void initTopics()
 	{
 		odomPublisher = node.newPublisher(TOPIC_NAME_ODOM, nav_msgs.Odometry._TYPE);
-		
+		eStopPublisher = node.newPublisher(TOPIC_NAME_ESTOP, EStopStatus._TYPE);
+
 		cmdVelSubscriber = node.newSubscriber(TOPIC_NAME_CMD_VEL, geometry_msgs.Twist._TYPE);
 		cmdVelSubscriber.addMessageListener(new cmdVelListener());
 	}
@@ -201,8 +206,15 @@ public class SmartMotor extends AbstractNodeMain
             }
         });
     }
+
+    private void publishEStopStatus(boolean stopped)
+    {
+        EStopStatus msg = node.getTopicMessageFactory().newFromType(EStopStatus._TYPE);
+        msg.setStopped(stopped);
+        eStopPublisher.publish(msg);
+    }
 	
-	private void initPositionListener()
+	private void initListeners()
 	{
         motors.setPositionListener(new PositionListener() {
             @Override
@@ -212,6 +224,20 @@ public class SmartMotor extends AbstractNodeMain
                 lastPositionUpdate = timestamp;
             }
         });
+
+        motors.setConnectionlistener(new ConnectionListener() {
+            @Override
+            public void onConnect()
+            {
+                publishEStopStatus(false);
+            }
+
+            @Override
+            public void onDisconnect()
+            {
+                publishEStopStatus(true);
+            }
+        });
 	}
 
 	private void init ( )
@@ -219,7 +245,7 @@ public class SmartMotor extends AbstractNodeMain
 		initTopics();
 		initServices();
 		initWatchdog();
-		initPositionListener();
+		initListeners();
         initOdomBroadcaster();
 	}
 	
