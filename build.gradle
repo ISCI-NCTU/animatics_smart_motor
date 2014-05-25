@@ -49,6 +49,6 @@ dependencies {
   compile 'org.ros.rosjava_bootstrap:gradle_plugins:0.1.+'
   compile 'ca.etsmtl.capra:SmartMotorLib:1.0-SNAPSHOT'
   compile 'org.ros.rosjava_core:rosjava_geometry:0.1.+'
-  compile 'ca.etsmtl.capra:capra_msgs:0.0.3'
+  compile 'ca.etsmtl.capra:capra_msgs:0.0.1-SNAPSHOT'
 }
 
