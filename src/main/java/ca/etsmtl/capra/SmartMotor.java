@@ -96,7 +96,6 @@ public class SmartMotor extends AbstractNodeMain
 		
 		nMotors = params.getInteger(PARAM_NAME_N_MOTORS, DEFAULT_N_MOTORS);
 		portName = params.getString(PARAM_NAME_PORT_NAME, DEFAULT_PORT_NAME);
-        portName = "/dev/ttyUSB0";
 		watchdogFreq = params.getInteger(PARAM_NAME_WATCHDOG_FREQ, DEFAULT_WATCHDOG_RATE);
 		covariance = params.getDouble(PARAM_NAME_COVARIANCE, DEFAULT_COVARIANCE);
         publishRate = params.getInteger(PARAM_NAME_PUBLISH_RATE, DEFAULT_PUBLISH_RATE);
