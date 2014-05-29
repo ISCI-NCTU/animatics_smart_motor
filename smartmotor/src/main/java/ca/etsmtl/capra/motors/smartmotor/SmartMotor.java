@@ -1,4 +1,4 @@
-package ca.etsmtl.capra;
+package ca.etsmtl.capra.motors.smartmotor;
 
 import ca.etsmtl.capra.smartmotorlib.Configuration;
 import ca.etsmtl.capra.smartmotorlib.listeners.ConnectionListener;
@@ -33,7 +33,7 @@ public class SmartMotor extends AbstractNodeMain
 	private static String PARAM_NAME_COVARIANCE = "~covariance";
     private static String PARAM_NAME_PUBLISH_RATE = "~publish_rate";
 	
-	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB1001";
+	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB1004";
 	private static int DEFAULT_N_MOTORS = 2;
 	private static int DEFAULT_WATCHDOG_RATE = 5;
 	private static double DEFAULT_COVARIANCE = 100.0;
@@ -43,7 +43,7 @@ public class SmartMotor extends AbstractNodeMain
 	private String portName;
 	private int watchdogFreq = DEFAULT_WATCHDOG_RATE;
     private int publishRate = DEFAULT_PUBLISH_RATE;
-	private double covariance = 100.0;
+	private double covariance = 1;
 	
 	ParameterTree params;
 	
@@ -74,7 +74,7 @@ public class SmartMotor extends AbstractNodeMain
     private Semaphore positionSem = new Semaphore(0);
     private long lastPublish = 0;
     private long lastPositionUpdate = 0;
-
+    
 	@Override
 	public GraphName getDefaultNodeName()
 	{
@@ -131,6 +131,7 @@ public class SmartMotor extends AbstractNodeMain
         Robot robot = Configuration.getRobot();
         robot.setPortName(portName);
         robot.setNbMotors(nMotors);
+        robot.setDefaultAccel(100);
         motors = new MotorController();
 
 		return motors.init();
@@ -182,7 +183,8 @@ public class SmartMotor extends AbstractNodeMain
                     pos.setZ(0);
 
                     // Orientation
-                    Quaternion quaternion = QuaternionUtils.createQuaternionMsgFromYaw(node, position.getTheta());
+                    System.out.println("1Motors: " + position.getYaw());
+                    Quaternion quaternion = QuaternionUtils.createQuaternionMsgFromYaw(node, position.getYaw());
                     odom.getPose().getPose().setOrientation(quaternion);
 
                     // Velocity
@@ -192,7 +194,8 @@ public class SmartMotor extends AbstractNodeMain
 
                     // Covariance
                     //Todo Trouver la vraie covariance
-                    double[] covariance_matrix = new double[]{  covariance, 0, 0, 0, 0, 0,
+                    double[] covariance_matrix = new double[]{
+                            covariance, 0, 0, 0, 0, 0,
                             0, covariance, 0, 0, 0, 0,
                             0, 0, covariance, 0, 0, 0,
                             0, 0, 0, covariance, 0, 0,

@@ -1,54 +1,72 @@
-// The Application plugin and mainClassName attribute are only required if
-// your package is used as a binary.
+/*
+ * Copyright (C) 2014 Mathieu Gascon-Lefebvre
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 
-apply plugin: 'java'
-apply plugin: 'application'
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.11'
+}
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
-
-mainClassName = 'org.ros.RosRun'
-
-repositories {
-    mavenCentral()
-
-    maven {
-        url 'https://github.com/rosjava/rosjava_mvn_repo/raw/master'
+buildscript {
+    def rosMavenPath = "$System.env.ROS_MAVEN_PATH".split(':').collect { 'file://' + it }
+    def rosMavenRepository = "$System.env.ROS_MAVEN_REPOSITORY"
+    repositories {
+        rosMavenPath.each { p ->
+            maven {
+                url p
+            }
+        }
+        mavenLocal()
+        maven {
+            url rosMavenRepository
+        }
     }
-
-    maven {
-        url 'http://appart.mathgl.com/nexus/content/groups/public/'
+    dependencies {
+        classpath group: 'org.ros.rosjava_bootstrap', name: 'gradle_plugins', version: '[0.1,0.2)'
     }
 }
 
-task deployApp(dependsOn: 'installApp') << {
-    File binDir = new File(project.projectDir, '/bin')
-    if (! binDir.isDirectory()) {
-        println "Creating $binDir directory"
-        binDir.mkdirs()
-    }
-    File link = new File(binDir,"execute")
-    File target = new File(project.projectDir, "build/install/$project.name/bin/$project.name")
-    println "Creating symlink from $link.absolutePath to $target.absolutePath"
-    ant.symlink(link: link.absolutePath, resource: target.absolutePath)
+apply plugin: 'catkin'
+
+
+allprojects {
+    /*
+      A github url provides a good standard unique name for your project
+      Example below, but you may wish to switch to your own unique url.
+    */
+    group 'com.github.rosjava.capra_motors'
+    version = project.catkin.pkg.version
 }
 
-run {  
-  args 'ca.etsmtl.capra.SmartMotor'
+subprojects {
+    /*
+      See https://github.com/rosjava/rosjava_bootstrap (look for gradle_plugins)
+      to see what is going on under the hood.
+    */
+    apply plugin: 'ros-java'
 }
 
-version = '0.0.1-SNAPSHOT'
-group = 'ros.capra'
+/*
+  Some useful tasks:
 
-dependencies {
-  compile 'org.ros.rosjava_core:rosjava:0.1.+'
-  compile 'org.ros.rosjava_messages:std_msgs:0.5.+-SNAPSHOT'
-  compile 'org.ros.rosjava_messages:sensor_msgs:1.10.+'
-  compile 'org.ros.rosjava_messages:tf:1.10.+'
-  compile 'org.ros.rosjava_bootstrap:message_generation:0.1.+-SNAPSHOT'
-  compile 'org.ros.rosjava_bootstrap:gradle_plugins:0.1.+'
-  compile 'ca.etsmtl.capra:SmartMotorLib:1.0-SNAPSHOT'
-  compile 'org.ros.rosjava_core:rosjava_geometry:0.1.+'
-  compile 'ca.etsmtl.capra:capra_msgs:0.0.1-SNAPSHOT'
-}
+    install: deploys jar's to MavenLocal() (i.e. ~/.m2/repository)
+    publishMavenJavaPublicationToMavenRepository : deploys jar's to devel/share/maven
+    installApp : assembles java apps in the _subproject_/build directories.
 
+  Note that these are dependent on the type of project (e.g. installApp is only valid for
+  java binary subprojects, while publishMavenJav... is only added once a subproject is included.
+  If you're using catkin_make, this is not important, since it will use the task list specified
+  in CMakeLists.txt
+*/
+defaultTasks 'tasks'

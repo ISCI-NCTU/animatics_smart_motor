@@ -1,4 +1,4 @@
-package ca.etsmtl.capra;
+package ca.etsmtl.capra.motors.smartmotor;
 
 import org.ros.node.ConnectedNode;
 import org.ros.rosjava_geometry.Quaternion;

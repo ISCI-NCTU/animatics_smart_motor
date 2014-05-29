@@ -1,4 +1,4 @@
-package ca.etsmtl.capra;
+package ca.etsmtl.capra.motors.smartmotor;
 
 public enum CommandType 
 {

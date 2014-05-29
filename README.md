@@ -1,2 +1,2 @@
-capra_smartmotor
+capra_motors
 ================
