@@ -30,6 +30,13 @@ task deployApp(dependsOn: 'installApp') << {
     ant.symlink(link: link.absolutePath, resource: target.absolutePath)
 }
 
+repositories {   
+    mavenCentral()
+
+    maven {
+        url 'http://appart.mathgl.com/nexus/content/groups/public/'   
+    }
+}
 
 /* 
  Dependencies can be on external maven artifacts (such as rosjava_core
