@@ -18,14 +18,6 @@
 apply plugin: 'application'
 mainClassName = 'org.ros.RosRun'
 
-repositories {
-    mavenCentral()
-
-    maven {
-        url 'http://appart.mathgl.com/nexus/content/groups/public/'
-    }
-}
-
 task deployApp(dependsOn: 'installApp') << {
     File binDir = new File(project.projectDir, '/bin')
     if (! binDir.isDirectory()) {
@@ -53,6 +45,6 @@ dependencies {
   compile 'org.ros.rosjava_messages:tf:1.10.+'
   compile 'ca.etsmtl.capra:SmartMotorLib:1.0-SNAPSHOT'
   compile 'org.ros.rosjava_core:rosjava_geometry:0.1.+'
-  compile 'ca.etsmtl.capra:capra_msgs:0.0.1-SNAPSHOT'
+  compile 'ca.etsmtl.capra.capra_msgs_java:capra_msgs:[0.0,)'
 }
 
