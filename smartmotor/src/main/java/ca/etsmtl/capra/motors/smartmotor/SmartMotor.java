@@ -11,6 +11,7 @@ import capra_msgs.EStopStatus;
 
 import org.ros.concurrent.CancellableLoop;
 import org.ros.message.MessageListener;
+import org.ros.message.Time;
 import org.ros.namespace.GraphName;
 import org.ros.node.AbstractNodeMain;
 import org.ros.node.ConnectedNode;
@@ -36,14 +37,14 @@ public class SmartMotor extends AbstractNodeMain
 	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB1004";
 	private static int DEFAULT_N_MOTORS = 2;
 	private static int DEFAULT_WATCHDOG_RATE = 5;
-	private static double DEFAULT_COVARIANCE = 100.0;
+	private static double DEFAULT_COVARIANCE = 1;
     private static int DEFAULT_PUBLISH_RATE = 25;
 	
 	private int nMotors;
 	private String portName;
 	private int watchdogFreq = DEFAULT_WATCHDOG_RATE;
     private int publishRate = DEFAULT_PUBLISH_RATE;
-	private double covariance = 1;
+	private double covariance = DEFAULT_COVARIANCE;
 	
 	ParameterTree params;
 	
@@ -73,7 +74,7 @@ public class SmartMotor extends AbstractNodeMain
     private Position position = new Position();
     private Semaphore positionSem = new Semaphore(0);
     private long lastPublish = 0;
-    private long lastPositionUpdate = 0;
+    private Time lastPositionUpdate;
     
 	@Override
 	public GraphName getDefaultNodeName()
@@ -165,6 +166,7 @@ public class SmartMotor extends AbstractNodeMain
             protected void loop() throws InterruptedException
             {
                 boolean newPos = positionSem.tryAcquire(10, TimeUnit.MILLISECONDS);
+                Time time = node.getCurrentTime();
                 long now = System.currentTimeMillis();
 
                 if ( newPos || lastPublish + (1000 / publishRate) <= now )
@@ -174,7 +176,9 @@ public class SmartMotor extends AbstractNodeMain
 
                     odom.getHeader().setFrameId("odom");
                     odom.setChildFrameId("base_link");
-                    odom.getHeader().setStamp(org.ros.message.Time.fromMillis((newPos)? lastPositionUpdate : now));
+                    if ( newPos && lastPositionUpdate != null)
+                        time = lastPositionUpdate;
+                    odom.getHeader().setStamp(time);
 
                     // Position
                     geometry_msgs.Point pos = odom.getPose().getPose().getPosition();
@@ -183,7 +187,6 @@ public class SmartMotor extends AbstractNodeMain
                     pos.setZ(0);
 
                     // Orientation
-                    System.out.println("1Motors: " + position.getYaw());
                     Quaternion quaternion = QuaternionUtils.createQuaternionMsgFromYaw(node, position.getYaw());
                     odom.getPose().getPose().setOrientation(quaternion);
 
@@ -224,7 +227,7 @@ public class SmartMotor extends AbstractNodeMain
             public void onNewPosition(Position pos, long timestamp) {
                 position = pos;
                 positionSem.release();
-                lastPositionUpdate = timestamp;
+                lastPositionUpdate = node.getCurrentTime();
             }
         });
 
