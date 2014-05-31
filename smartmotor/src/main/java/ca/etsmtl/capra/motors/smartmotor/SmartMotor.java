@@ -3,6 +3,7 @@ package ca.etsmtl.capra.motors.smartmotor;
 import ca.etsmtl.capra.smartmotorlib.Configuration;
 import ca.etsmtl.capra.smartmotorlib.listeners.ConnectionListener;
 import ca.etsmtl.capra.smartmotorlib.listeners.PositionListener;
+import ca.etsmtl.capra.smartmotorlib.robots.Capra6_2;
 import ca.etsmtl.capra.smartmotorlib.robots.Robot;
 import ca.etsmtl.capra.smartmotorlib.Position;
 import geometry_msgs.Quaternion;
@@ -129,7 +130,8 @@ public class SmartMotor extends AbstractNodeMain
 	
 	private boolean connectToMotors()
 	{
-        Robot robot = Configuration.getRobot();
+        Robot robot = new Capra6_2();
+        Configuration.setRobot(robot);
         robot.setPortName(portName);
         robot.setNbMotors(nMotors);
         robot.setDefaultAccel(100);
