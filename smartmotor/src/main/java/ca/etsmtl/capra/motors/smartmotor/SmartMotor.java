@@ -130,11 +130,12 @@ public class SmartMotor extends AbstractNodeMain
 	
 	private boolean connectToMotors()
 	{
-        Robot robot = new Capra6_2();
-        Configuration.setRobot(robot);
+//        Robot robot = new Capra6_2();
+//        Configuration.setRobot(robot);
+        Robot robot = Configuration.getRobot();
         robot.setPortName(portName);
         robot.setNbMotors(nMotors);
-        robot.setDefaultAccel(100);
+        robot.setDefaultAccel(10);
         motors = new MotorController();
 
 		return motors.init();
@@ -193,9 +194,11 @@ public class SmartMotor extends AbstractNodeMain
                     odom.getPose().getPose().setOrientation(quaternion);
 
                     // Velocity
-                    //Todo: Modifier pour avoir la vraie valeur
-                    odom.getTwist().getTwist().getLinear().setX(commandedLinearVelocity);
-                    odom.getTwist().getTwist().getAngular().setZ(commandedAngularVelocity);
+                    if ( newPos )
+                    {
+                        odom.getTwist().getTwist().getLinear().setX(position.getLinearVelocity());
+                        odom.getTwist().getTwist().getAngular().setZ(position.getAngularVelocity());
+                    }
 
                     // Covariance
                     //Todo Trouver la vraie covariance
@@ -206,8 +209,8 @@ public class SmartMotor extends AbstractNodeMain
                             0, 0, 0, covariance, 0, 0,
                             0, 0, 0, 0, covariance, 0,
                             0, 0, 0, 0, 0, covariance};
-                    odom.getPose().setCovariance(covariance_matrix);
-                    odom.getTwist().setCovariance(covariance_matrix);
+//                    odom.getPose().setCovariance(covariance_matrix);
+//                    odom.getTwist().setCovariance(covariance_matrix);
 
                     odomPublisher.publish(odom);
                 }
