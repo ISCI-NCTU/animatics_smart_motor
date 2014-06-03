@@ -2,5 +2,11 @@
     <node pkg="capra_motors" name="smartmotor" type="smartmotor" args="ca.etsmtl.capra.motors.smartmotor.SmartMotor" output="screen">
         <param name="port" value="/dev/ttyUSB1004"/>
         <param name="n_motors" value="2"/>
+        <rosparam param="covariance_matrix">1.0, 0,   0,   0,   0,   0,
+                                            0,   1.0, 0,   0,   0,   0,
+                                            0,   0,   1.0, 0,   0,   0,
+                                            0,   0,   0,   1.0, 0,   0,
+                                            0,   0,   0,   0,   1.0, 0,
+                                            0,   0,   0,   0,   0,   1.0</rosparam>
     </node>
 </launch>

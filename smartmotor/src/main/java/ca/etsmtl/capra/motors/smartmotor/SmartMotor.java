@@ -32,20 +32,26 @@ public class SmartMotor extends AbstractNodeMain
 	private static String PARAM_NAME_N_MOTORS = "~n_motors";
 	private static String PARAM_NAME_PORT_NAME = "~port";
 	private static String PARAM_NAME_WATCHDOG_FREQ = "~watchdog_rate";
-	private static String PARAM_NAME_COVARIANCE = "~covariance";
+	private static String PARAM_NAME_COVARIANCE_MATRIX = "~covariance_matrix";
     private static String PARAM_NAME_PUBLISH_RATE = "~publish_rate";
 	
 	private static String DEFAULT_PORT_NAME = "/dev/ttyUSB1004";
 	private static int DEFAULT_N_MOTORS = 2;
 	private static int DEFAULT_WATCHDOG_RATE = 5;
-	private static double DEFAULT_COVARIANCE = 1;
     private static int DEFAULT_PUBLISH_RATE = 25;
+    private static double[] DEFAULT_COVARIANCE_MATRIX = new double[]{
+                                        1.0, 0, 0, 0, 0, 0,  // x
+                                        0, 1.0, 0, 0, 0, 0,  // y
+                                        0, 0, 1.0, 0, 0, 0,  // z
+                                        0, 0, 0, 1.0, 0, 0,  // Rotation on x
+                                        0, 0, 0, 0, 1.0, 0,  // Rotation on y
+                                        0, 0, 0, 0, 0, 1.0}; // Rotation on z
 	
 	private int nMotors;
 	private String portName;
 	private int watchdogFreq = DEFAULT_WATCHDOG_RATE;
     private int publishRate = DEFAULT_PUBLISH_RATE;
-	private double covariance = DEFAULT_COVARIANCE;
+	private double[] covarianceMatrix = DEFAULT_COVARIANCE_MATRIX;
 	
 	ParameterTree params;
 	
@@ -80,7 +86,7 @@ public class SmartMotor extends AbstractNodeMain
 	@Override
 	public GraphName getDefaultNodeName()
 	{
-		return GraphName.of("capra_smartmotor");
+		return GraphName.of("smartmotor");
 	}
 	
 	private void initTopics()
@@ -99,9 +105,25 @@ public class SmartMotor extends AbstractNodeMain
 		nMotors = params.getInteger(PARAM_NAME_N_MOTORS, DEFAULT_N_MOTORS);
 		portName = params.getString(PARAM_NAME_PORT_NAME, DEFAULT_PORT_NAME);
 		watchdogFreq = params.getInteger(PARAM_NAME_WATCHDOG_FREQ, DEFAULT_WATCHDOG_RATE);
-		covariance = params.getDouble(PARAM_NAME_COVARIANCE, DEFAULT_COVARIANCE);
+		covarianceMatrix = parseCovarianceMatrix(params.getString(PARAM_NAME_COVARIANCE_MATRIX, ""));
         publishRate = params.getInteger(PARAM_NAME_PUBLISH_RATE, DEFAULT_PUBLISH_RATE);
 	}
+
+    private double[] parseCovarianceMatrix(String str)
+    {
+        if ( str == "" )
+            return DEFAULT_COVARIANCE_MATRIX;
+        else
+        {
+            String[] strings = str.split(",");
+            double[] matrix = new double[strings.length];
+            for ( int i = 0; i < strings.length; i ++ )
+            {
+                matrix[i] = Double.parseDouble(strings[i].trim());
+            }
+            return matrix;
+        }
+    }
 
 	private class cmdVelListener implements MessageListener<geometry_msgs.Twist>
 	{
@@ -201,16 +223,9 @@ public class SmartMotor extends AbstractNodeMain
                     }
 
                     // Covariance
-                    //Todo Trouver la vraie covariance
-                    double[] covariance_matrix = new double[]{
-                            covariance, 0, 0, 0, 0, 0,
-                            0, covariance, 0, 0, 0, 0,
-                            0, 0, covariance, 0, 0, 0,
-                            0, 0, 0, covariance, 0, 0,
-                            0, 0, 0, 0, covariance, 0,
-                            0, 0, 0, 0, 0, covariance};
-//                    odom.getPose().setCovariance(covariance_matrix);
-//                    odom.getTwist().setCovariance(covariance_matrix);
+
+                    odom.getPose().setCovariance(covarianceMatrix);
+                    odom.getTwist().setCovariance(covarianceMatrix);
 
                     odomPublisher.publish(odom);
                 }
