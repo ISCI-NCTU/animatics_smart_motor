@@ -47,13 +47,13 @@ class Config:
     @staticmethod
     def get_resolution():
         if not Config.resolution:
-            Config.resolution = rospy.get_param('resolution', Config.DEFAULT_RESOLUTION)
+            Config.resolution = rospy.get_param('~resolution', Config.DEFAULT_RESOLUTION)
         return Config.resolution
 
     @staticmethod
     def get_counts_rpm():
         if not Config.counts_rpm:
-            Config.counts_rpm = rospy.get_param('counts_rpm', Config.DEFAULT_COUNTS_RPM)
+            Config.counts_rpm = rospy.get_param('~counts_rpm', Config.DEFAULT_COUNTS_RPM)
         return Config.counts_rpm
 
     @staticmethod
@@ -63,91 +63,91 @@ class Config:
     @staticmethod
     def get_counts_revs():
         if not Config.counts_revs:
-            Config.counts_revs = rospy.get_param('counts_revs', Config.DEFAULT_COUNTS_REVS)
+            Config.counts_revs = rospy.get_param('~counts_revs', Config.DEFAULT_COUNTS_REVS)
         return Config.counts_revs
 
     @staticmethod
     def get_counts_sec():
         if not Config.counts_sec:
-            Config.counts_sec = rospy.get_param('counts_sec', Config.DEFAULT_COUNTS_SEC)
+            Config.counts_sec = rospy.get_param('~counts_sec', Config.DEFAULT_COUNTS_SEC)
         return Config.counts_sec
 
     @staticmethod
     def get_gear_ratio():
         if not Config.gear_ratio:
-            Config.gear_ratio = rospy.get_param('gear_ratio', Config.DEFAULT_GEAR_RATIO)
+            Config.gear_ratio = rospy.get_param('~gear_ratio', Config.DEFAULT_GEAR_RATIO)
         return Config.gear_ratio
 
     @staticmethod
     def get_wheel_diameter():
         if not Config.wheel_diameter:
-            Config.wheel_diameter = rospy.get_param('wheel_diameter', Config.DEFAULT_WHEEL_DIAMETER)
+            Config.wheel_diameter = rospy.get_param('~wheel_diameter', Config.DEFAULT_WHEEL_DIAMETER)
         return Config.wheel_diameter
 
     @staticmethod
     def get_robot_width():
         if not Config.robot_width:
-            Config.robot_width = rospy.get_param('robot_width', Config.DEFAULT_ROBOT_WIDTH)
+            Config.robot_width = rospy.get_param('~robot_width', Config.DEFAULT_ROBOT_WIDTH)
         return Config.robot_width
 
     @staticmethod
     def get_nb_motors():
         if not Config.nb_motors:
-            Config.nb_motors = rospy.get_param('nb_motors', Config.DEFAULT_NB_MOTORS)
+            Config.nb_motors = rospy.get_param('~nb_motors', Config.DEFAULT_NB_MOTORS)
         return Config.nb_motors
 
     @staticmethod
     def get_max_speed():
         if not Config.max_speed:
-            Config.max_speed = rospy.get_param('max_speed', Config.DEFAULT_MAX_SPEED)
+            Config.max_speed = rospy.get_param('~max_speed', Config.DEFAULT_MAX_SPEED)
         return Config.max_speed
 
     @staticmethod
     def get_broadcast_address():
         if not Config.broadcast_address:
-            Config.broadcast_address = rospy.get_param('broadcast_address', Config.DEFAULT_BROADCAST_ADDRESS)
+            Config.broadcast_address = rospy.get_param('~broadcast_address', Config.DEFAULT_BROADCAST_ADDRESS)
         return Config.broadcast_address
 
     @staticmethod
     def get_serial_port():
         if not Config.serial_port:
-            Config.serial_port = rospy.get_param('serial_port', Config.DEFAULT_SERIAL_PORT)
+            Config.serial_port = rospy.get_param('~serial_port')#, Config.DEFAULT_SERIAL_PORT)
         return Config.serial_port
 
     @staticmethod
     def get_default_accel():
         if not Config.default_accel:
-            Config.default_accel = rospy.get_param('default_accel', Config.DEFAULT_DEFAULT_ACCEL)
+            Config.default_accel = rospy.get_param('~default_accel', Config.DEFAULT_DEFAULT_ACCEL)
         return Config.default_accel
 
     @staticmethod
     def get_baudrate():
         if not Config.baudrate:
-            Config.baudrate = rospy.get_param('baudrate', Config.DEFAULT_BAUDRATE)
+            Config.baudrate = rospy.get_param('~baudrate', Config.DEFAULT_BAUDRATE)
         return Config.baudrate
 
     @staticmethod
     def get_max_timeout_count():
         if not Config.max_timeout_count:
-            Config.max_timeout_count = rospy.get_param('max_timeout_count', Config.DEFAULT_MAX_TIMEOUT_COUNT)
+            Config.max_timeout_count = rospy.get_param('~max_timeout_count', Config.DEFAULT_MAX_TIMEOUT_COUNT)
         return Config.max_timeout_count
 
     @staticmethod
     def get_watchdog_timeout():
         if not Config.watchdog_timeout:
-            Config.watchdog_timeout = rospy.get_param('watchdog_timeout', Config.DEFAULT_WATCHDOG_TIMEOUT)
+            Config.watchdog_timeout = rospy.get_param('~watchdog_timeout', Config.DEFAULT_WATCHDOG_TIMEOUT)
         return Config.watchdog_timeout
 
     @staticmethod
     def get_publish_rate():
         if not Config.publish_rate:
-            Config.publish_rate = rospy.get_param('publish_rate', Config.DEFAULT_PUBLISH_RATE)
+            Config.publish_rate = rospy.get_param('~publish_rate', Config.DEFAULT_PUBLISH_RATE)
         return Config.publish_rate
 
     @staticmethod
     def get_covariance_matrix():
         if not Config.covariance_matrix:
-            mstr = rospy.get_param('covariance_matrix', Config.DEFAULT_COVARIANCE_MATRIX)
+            mstr = rospy.get_param('~covariance_matrix', Config.DEFAULT_COVARIANCE_MATRIX)
             Config.covariance_matrix = [float(v.strip()) for v in mstr.split(",")]
 
         return Config.covariance_matrix

@@ -66,7 +66,6 @@ def velocity_timer(event):
 
 if __name__ == "__main__":
     rospy.init_node('animatics_smart_motor')
-
     motor_controller = MotorController()
 
     rospy.Subscriber("/cmd_vel", Twist, cmd_vel_callback)
