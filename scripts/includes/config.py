@@ -111,7 +111,7 @@ class Config:
     @staticmethod
     def get_serial_port():
         if not Config.serial_port:
-            Config.serial_port = rospy.get_param('~serial_port')#, Config.DEFAULT_SERIAL_PORT)
+            Config.serial_port = rospy.get_param('~serial_port', Config.DEFAULT_SERIAL_PORT)
         return Config.serial_port
 
     @staticmethod
