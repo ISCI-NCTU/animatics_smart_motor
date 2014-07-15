@@ -10,10 +10,11 @@ class Motor(AbstractMotor):
     position = 0
     speed_ratio = 1.0
 
-    def __init__(self, id, reverse, serial_com, speed_ratio=1.0):
+    def __init__(self, id, reverse, serial_com, speed_ratio=1.0, position_ratio=1.0):
         super(Motor, self).__init__(id, serial_com)
         self.reverse = reverse
         self.speed_ratio = speed_ratio
+        self.position_ratio = position_ratio
 
     def initialize(self):
         self.set_address(self.id)
@@ -38,7 +39,7 @@ class Motor(AbstractMotor):
         if self.reverse:
             encoder_count = -encoder_count
         self.encoder_count = encoder_count / self.speed_ratio
-        self.set_position(MotorUtils.counts_to_distance(encoder_count))
+        self.set_position(MotorUtils.counts_to_distance(encoder_count) * self.position_ratio)
 
     def set_position(self, position):
         self.position = position

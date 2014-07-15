@@ -26,6 +26,7 @@ class Config:
                                 0,   0,   0,   0,   1.0, 0,
                                 0,   0,   0,   0,   0,   1.0"""
     DEFAULT_SPEED_RATIO = "1.0, 1.0"
+    DEFAULT_POSITION_RATIO = "1.0, 1.0"
 
     resolution = None
     counts_rpm = None
@@ -45,6 +46,7 @@ class Config:
     publish_rate = None
     covariance_matrix = None
     speed_ratio = None
+    position_ratio = None
 
     @staticmethod
     def get_resolution():
@@ -159,3 +161,10 @@ class Config:
             sstr = rospy.get_param('~speed_ratio', Config.DEFAULT_SPEED_RATIO)
             Config.speed_ratio = [float(v.strip()) for v in sstr.split(",")]
         return Config.speed_ratio
+
+    @staticmethod
+    def get_position_ratio():
+        if not Config.position_ratio:
+            pstr = rospy.get_param('~position_ratio', Config.DEFAULT_POSITION_RATIO)
+            Config.position_ratio = [float(v.strip()) for v in pstr.split(",")]
+        return Config.position_ratio

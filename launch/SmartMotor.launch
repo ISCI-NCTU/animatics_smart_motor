@@ -3,6 +3,8 @@
         <param name="serial_port" value="/dev/ttyUSB1004"/>
         <param name="nb_motors" value="2"/>
         <param name="watchdog_timeout" value="150"/>
+        <param name="speed_ratio" value="0.985, 1.0"/>
+        <param name="position_ratio" value="0.98, 0.965"/>
         <!--                                x    y    z    rx   ry   rz -->
         <rosparam param="covariance_matrix">1.0, 0,   0,   0,   0,   0,
                                             0,   1.0, 0,   0,   0,   0,

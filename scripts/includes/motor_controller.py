@@ -20,7 +20,10 @@ class MotorController(AbstractMotor):
         super(MotorController, self).__init__(0, SerialCom(Config.get_serial_port()))
         nb_motors = Config.get_nb_motors()
         for id in range(1, nb_motors + 1):
-            self.motors.append(Motor(id, id > nb_motors / 2, self.serial_com, Config.get_speed_ratio()[id-1]))
+            self.motors.append(Motor(id, id > nb_motors / 2,
+                                     self.serial_com,
+                                     Config.get_speed_ratio()[id-1],
+                                     Config.get_position_ratio()[id-1]))
 
         self.serial_com.add_listener(ReportActualPositionResponse, self._on_position_update)
         self.serial_com.add_listener(ReportStatusResponse, self._on_status_update)
