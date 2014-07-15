@@ -37,7 +37,7 @@ class Motor(AbstractMotor):
     def set_encoder_count(self, encoder_count):
         if self.reverse:
             encoder_count = -encoder_count
-        self.encoder_count = encoder_count
+        self.encoder_count = encoder_count / self.speed_ratio
         self.set_position(MotorUtils.counts_to_distance(encoder_count))
 
     def set_position(self, position):
