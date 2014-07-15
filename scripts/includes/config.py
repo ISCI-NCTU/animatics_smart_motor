@@ -25,6 +25,7 @@ class Config:
                                 0,   0,   0,   1.0, 0,   0,
                                 0,   0,   0,   0,   1.0, 0,
                                 0,   0,   0,   0,   0,   1.0"""
+    DEFAULT_SPEED_RATIO = "1.0, 1.0"
 
     resolution = None
     counts_rpm = None
@@ -43,6 +44,7 @@ class Config:
     watchdog_timeout = None
     publish_rate = None
     covariance_matrix = None
+    speed_ratio = None
 
     @staticmethod
     def get_resolution():
@@ -149,5 +151,11 @@ class Config:
         if not Config.covariance_matrix:
             mstr = rospy.get_param('~covariance_matrix', Config.DEFAULT_COVARIANCE_MATRIX)
             Config.covariance_matrix = [float(v.strip()) for v in mstr.split(",")]
-
         return Config.covariance_matrix
+
+    @staticmethod
+    def get_speed_ratio():
+        if not Config.speed_ratio:
+            sstr = rospy.get_param('~speed_ratio', Config.DEFAULT_SPEED_RATIO)
+            Config.speed_ratio = [float(v.strip()) for v in sstr.split(",")]
+        return Config.speed_ratio
