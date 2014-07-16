@@ -45,8 +45,8 @@ class Motor(AbstractMotor):
         self.position = position
 
     def reset(self):
-        self.encoder_count = 0
-        self.position = 0
+        #self.encoder_count = 0
+        #self.position = 0
         self.temperature = 0
         self.amps = 0
         self.status = None

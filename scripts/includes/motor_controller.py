@@ -52,7 +52,7 @@ class MotorController(AbstractMotor):
 
     def disconnect(self):
         self.serial_com.disconnect()
-        self.position = Position()
+        #self.position = Position()
         for m in self.motors:
             m.reset()
 
@@ -66,6 +66,12 @@ class MotorController(AbstractMotor):
 
         left = displacement[len(displacement)/2]
         right = displacement[0]
+
+        # Displacement error after E-Stop
+        if abs(left) > 0.01 or abs(right) > 0.01:
+            left = 0.0
+            right = 0.0
+
         self.position.move(left, right)
 
     def _on_status_update(self, status):
