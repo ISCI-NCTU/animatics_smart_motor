@@ -14,7 +14,7 @@ def odom_callback(odom):
     broadcaster.sendTransform((p.x, p.y, 0),
                                (o.x, o.y, o.z, o.w),
                                odom.header.stamp,
-                               "base_link",
+                               "base_footprint",
                                "odom")
 
 rospy.init_node("odom_to_tf")
