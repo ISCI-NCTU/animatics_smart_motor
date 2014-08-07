@@ -68,7 +68,8 @@ class MotorController(AbstractMotor):
         right = displacement[0]
 
         # Displacement error after E-Stop
-        if abs(left) > 0.01 or abs(right) > 0.01:
+        if abs(left) > 0.1 or abs(right) > 0.1:
+            print "Err"
             left = 0.0
             right = 0.0
 
